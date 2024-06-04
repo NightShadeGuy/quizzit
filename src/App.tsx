@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { categories, difficulty, choiceType } from './shared/data';
 import { Endpoint, Questionaire } from './shared/types';
 import axios from 'axios';
 import { GiCheckMark } from "react-icons/gi";
 import { HiMiniXMark } from "react-icons/hi2";
+import bgMusic from "./assets/soundtrack/Jeremy Blake - Powerup.mp3";
+import wrongAnswerSound from "./assets/soundtrack/wrong-answer.wav";
+import correctAnswerSound from "./assets/soundtrack/correct.mp3";
+import nextSound from "./assets/soundtrack/next.wav";
+import clickSelect from "./assets/soundtrack/clickselect.mp3";
 
 function App() {
   const [baseUrl, setBaseUrl] = useState("");
@@ -23,6 +28,12 @@ function App() {
   const [isError, setIsError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>("");
 
+  const soundtrackRef = useRef<null | HTMLAudioElement>(null);
+  const wrongAnsSound = useRef<null | HTMLAudioElement>(null);
+  const correctAnsSound = useRef<null | HTMLAudioElement>(null);
+  const nextSoundEffect = useRef<null | HTMLAudioElement>(null);
+  const selectSoundRef = useRef<null | HTMLAudioElement>(null);
+
   const regex = /&(amp|quot|#039|Prime|lrm);/gi;
 
   //console.log(baseUrl);
@@ -32,11 +43,18 @@ function App() {
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const { name, value } = e.currentTarget;
     setEndpoint(prevValue => ({ ...prevValue, [name]: value }))
+
+    selectSoundRef.current = new Audio(clickSelect);
+
+    if (selectSoundRef.current) {
+      selectSoundRef.current.play();
+    }
   }
 
   const fetchQuestionaire = async (): Promise<void> => {
     setPlay(true);
     setIsLoading(true);
+    soundtrackRef.current?.play();
     try {
       const response = await axios.get(baseUrl);
       //console.log("response:", response.data.results);
@@ -70,8 +88,15 @@ function App() {
     if (choiceSelected === correctAnswer) {
       setScore(prevScore => prevScore + 10);
       setIsCorrect(true);
+      correctAnsSound.current?.play();
+
     } else {
       setIsCorrect(false);
+      wrongAnsSound.current?.play();
+
+      if (wrongAnsSound.current) {
+        wrongAnsSound.current.volume = 0.50;
+      }
     }
   }
 
@@ -87,29 +112,38 @@ function App() {
   }, [count, isLoading]);
 
 
+  useEffect(() => {
+    soundtrackRef.current = new Audio(bgMusic);
+    correctAnsSound.current = new Audio(correctAnswerSound);
+    wrongAnsSound.current = new Audio(wrongAnswerSound);
+    nextSoundEffect.current = new Audio(nextSound);
+  }, []);
+
 
   return (
-    <>
-      <div>
-        <h1 className=" text-5xl text-center my-10 font-medium">Quizzit</h1>
-        <div className={`flex flex-col p-4  border border-black rounded-md  transition duration-150  xs:1/4 xs:mx-4 lg:w-1/2 lg:mx-auto 
+    <main className="min-h-screen flex justify-center items-center bg-[url('https://images.pexels.com/photos/7130499/pexels-photo-7130499.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')] bg-cover bg-no-repeat object-center">
+      <div className='mx-5 flex flex-col gap-y-10'>
+        <h1 className="dancing-script-title drop-shadow-xl text-7xl text-center font-medium bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-pink-400">
+          Quizzit
+        </h1>
+        <div className={`flex flex-col p-8 border border-rose-500 rounded-lg transition-all duration-300 md:w-[672px] gap-y-5
             ${selectAnswer ? (
             isCorrect
-              ? "bg-green-200 border-green-900"
-              : "bg-red-200 border-red-900"
-          ) : "bg-white"}
+              ? "bg-gradient-to-bl from-green-400 to-lime-200 border-green-900"
+              : " bg-gradient-to-bl to-red-300 from-pink-400 border-red-900"
+          ) : "bg-gradient-to-tr from-pink-200/90  to-white/90"}
             `}
         >
           {!play && !isLoading ? (
             <>
               <div className="my-2 flex items-center">
                 <p className='w-40'>
-                  <label htmlFor='category' className=" w-full">Select Category</label>
+                  <label htmlFor='category' className="bebas-neue-regular text-slate-800 font-medium">Select Category</label>
                 </p>
                 <select
                   name="category"
                   id="category"
-                  className="py-2 rounded-md w-2/4"
+                  className="bebas-neue-regular py-2 rounded-md w-2/4 bg-transparent text-slate-700 outline-none"
                   onChange={handleChange}
                 >
                   {categories.map((category, index) => (
@@ -125,12 +159,12 @@ function App() {
 
               <div className="my-2 flex items-center">
                 <p className='w-40'>
-                  <label htmlFor='difficulty' className="">Select Difficulty</label>
+                  <label htmlFor='difficulty' className="bebas-neue-regular text-slate-800 font-medium">Select Difficulty</label>
                 </p>
                 <select
                   name="difficulty"
                   id="difficulty"
-                  className="py-2 rounded-md w-2/4"
+                  className="bebas-neue-regular py-2 rounded-md w-2/4 bg-transparent text-slate-700 outline-none"
                   onChange={handleChange}
                 >
                   {difficulty.map((mode, index) => (
@@ -146,12 +180,12 @@ function App() {
 
               <div className="my-2 flex items-center">
                 <p className='w-40'>
-                  <label htmlFor='type' className="">Select Type</label>
+                  <label htmlFor='type' className="bebas-neue-regular text-slate-800 font-medium">Select Type</label>
                 </p>
                 <select
                   name="type"
                   id="type"
-                  className="py-2 rounded-md w-2/4"
+                  className="bebas-neue-regular py-2 rounded-md w-2/4 bg-transparent text-slate-700 outline-none"
                   onChange={handleChange}
                 >
                   {choiceType.map((choice, index) => (
@@ -165,9 +199,8 @@ function App() {
                 </select>
               </div>
 
-
               <button
-                className="px-4 py-2 border bg-black text-white rounded-md active:bg-white transition duration-200 active:text-black active:border-black"
+                className="dancing-script-title px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
                 onClick={fetchQuestionaire}
               >
                 Play
@@ -176,16 +209,19 @@ function App() {
           ) : (
             <>
               {isLoading && (
-                <p>Generating questions...</p>
+                <p className='bebas-neue-regular text-xl text-slate-700'>Generating questions...</p>
               )}
 
               {isError && (
                 <>
-                  <p>Failed to fetch questionaire</p>
-                  <p>{isError}</p>
+                  <p className='bebas-neue-regular text-xl text-slate-700'>Failed to fetch questionaire</p>
+                  <p className='bebas-neue-regular text-xl text-slate-700'>{isError}</p>
                   <button
-                    className="my-2 px-4 py-2 border bg-black text-white rounded-md transition duration-200 active:bg-white active:text-black active:border-black"
-                    onClick={() => setPlay(false)}
+                    className="dancing-script-title text-xl text-slate-700 my-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
+                    onClick={() => {
+                      setPlay(false)
+                      soundtrackRef.current?.pause();
+                    }}
                   >
                     Go back
                   </button>
@@ -195,19 +231,19 @@ function App() {
               {questions[count] && !isError && (
                 <div>
                   <div className='mt-2 flex justify-between flex-wrap'>
-                    <p>Category: {questions[count].category.replace(regex, "")}</p>
-                    <p>
-                      <span className="pr-3">{count + 1}/10</span>
+                    <p className='bebas-neue-regular text-slate-700'>Category: {questions[count].category.replace(regex, "")}</p>
+                    <p className='bebas-neue-regular text-slate-700'>
+                      <span className="pr-3 bebas-neue-regular text-slate-700">{count + 1}/10</span>
                       Score: {score}
                     </p>
                   </div>
-                  <p className="my-2">Question #{count + 1}</p>
-                  <h2>{questions[count].question.replace(regex, "")}</h2>
+                  <p className="my-2 bebas-neue-regular text-slate-700">Question #{count + 1}</p>
+                  <h2 className='bebas-neue-regular text-slate-700'>{questions[count].question.replace(regex, "")}</h2>
                   <div className="flex flex-col justify-center">
                     {shuffledChoices.map((info) => (
                       <button
                         key={info}
-                        className={`my-2 px-4 py-1  bg-white text-black border border-black rounded-full opacity-75
+                        className={`bebas-neue-regular text-slate-700 my-2 px-4 py-1  bg-white border border-black rounded-full opacity-75
                           ${selectAnswer === info && selectAnswer !== questions[count].correct_answer
                             ? "opacity-100 text-red-900 bg-red-600/50 border-red-900"
                             : ""
@@ -234,7 +270,7 @@ function App() {
 
                   <div className="flex flex-row items-center  justify-between">
                     <button
-                      className="my-2 ml-2 px-4 py-2 border bg-black text-white rounded-md transition duration-200 active:bg-white active:text-black active:border-black"
+                      className="dancing-script-title my-2 ml-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
                       onClick={() => {
                         if (!selectAnswer) {
                           setMsg("Please select an answer");
@@ -244,6 +280,7 @@ function App() {
                           setIsCorrect(null);
                           setMsg(null);
                           shuffleChoices();
+                          nextSoundEffect.current?.play();
                         }
                       }}
                     >
@@ -262,15 +299,16 @@ function App() {
 
               {count > 9 && (
                 <>
-                  <h2 className=" text-center text-3xl">Your Score</h2>
-                  <p className="text-center text-5xl">{score}/100</p>
+                  <h2 className="dancing-script-title  text-slate-700  text-center text-3xl">Your Score</h2>
+                  <p className="bebas-neue-regular text-slate-700 text-center text-5xl">{score}/100</p>
                   <button
-                    className="my-2 ml-2 px-4 py-2 border bg-black text-white rounded-md transition duration-200 active:bg-white active:text-black active:border-black"
+                    className="dancing-script-title  my-2 ml-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
                     onClick={() => {
                       setCount(0);
                       setScore(0);
                       setPlay(false);
                       setEndpoint({ category: "", difficulty: "", type: "" })
+                      soundtrackRef.current?.pause();
                     }}
                   >
                     Play Again
@@ -283,7 +321,7 @@ function App() {
 
         </div>
       </div>
-    </>
+    </main>
   )
 }
 

@@ -1,12 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&family=Reddit+Mono:wght@200..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@400..700&display');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    font-family: "Public Sans", sans-serif;
+    font-family: "bebas-neue-regular";
     font-optical-sizing: auto;
-    @apply bg-slate-200
+    font-size: 20px;
+
   }
+
+
+}
+
+@layer utilities {
+  .bebas-neue-regular {
+    font-family: "Bebas Neue", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /*   <uniquifier>: Use a unique and descriptive class name */
+  /*  <weight>: Use a value from 400 to 700 */
+
+  .dancing-script-title {
+    font-family: "Dancing Script", cursive;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+  }
+
 }
