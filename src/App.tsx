@@ -284,9 +284,9 @@ function App() {
                     {shuffledChoices.map((info) => (
                       <button
                         key={info}
-                        className={`bebas-neue-regular text-slate-700 my-2 px-4 py-1 bg-white border border-black rounded-full opacity-75
+                        className={`bebas-neue-regular text-slate-700 my-2 px-4 py-1  border border-slate-800 rounded-full opacity-75
                             ${selectAnswer === info && selectAnswer !== questions[count].correct_answer
-                            ? "opacity-100 text-red-900 bg-red-400/60 border-red-900"
+                            ? "opacity-100 text-red-900 bg-red-400/80 border-red-900"
                             : ""
                           }
                             ${selectAnswer === info && selectAnswer === questions[count].correct_answer
@@ -295,7 +295,7 @@ function App() {
                           }
                             ${selectAnswer
                             ? info === questions[count].correct_answer
-                              ? "text-green-500 font-bold bg-green-500/90 border-green-600"
+                              ? "text-green-500 font-bold bg-green-600/80 border-green-600"
                               : ""
                             : ""
                           }
@@ -311,7 +311,7 @@ function App() {
 
                   <div className="flex flex-row items-center justify-between">
                     <button
-                      className="dancing-script-title px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
+                      className="dancing-script-title px-4 py-2 shadow-xl bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
                       onClick={goToNextQuestion}
                     >
                       Next
