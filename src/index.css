@@ -11,8 +11,29 @@
     font-optical-sizing: auto;
     font-size: 20px;
 
+
   }
 
+  .main-bg::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    height: 250%;
+    background: linear-gradient(to right, #ffcdd2 , #f8bbd0, #e1bee7);
+    animation: spin 3s infinite linear forwards;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(45deg); }
+    25% { transform: translate(-50%, -50%) rotate(90deg); }
+    25% { transform: translate(-50%, -50%) rotate(165deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
 
 }
 

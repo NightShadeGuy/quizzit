@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { categories, difficulty, choiceType } from './shared/data';
+import { categories, difficulty, choiceType, numberOfQuestions } from './shared/data';
 import { Endpoint, Questionaire } from './shared/types';
 import axios from 'axios';
 import { GiCheckMark } from "react-icons/gi";
@@ -13,6 +13,7 @@ import clickSelect from "./assets/soundtrack/clickselect.mp3";
 function App() {
   const [baseUrl, setBaseUrl] = useState("");
   const [endpoint, setEndpoint] = useState<Endpoint>({
+    limitOfQuestion: 10,
     category: "",
     difficulty: "",
     type: "",
@@ -28,7 +29,7 @@ function App() {
   const [isError, setIsError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>("");
 
-  const soundtrackRef = useRef<null | HTMLAudioElement>(null);
+  const soundtrackRef = useRef<HTMLAudioElement>(new Audio(bgMusic));
   const wrongAnsSound = useRef<null | HTMLAudioElement>(null);
   const correctAnsSound = useRef<null | HTMLAudioElement>(null);
   const nextSoundEffect = useRef<null | HTMLAudioElement>(null);
@@ -43,7 +44,6 @@ function App() {
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const { name, value } = e.currentTarget;
     setEndpoint(prevValue => ({ ...prevValue, [name]: value }))
-
     selectSoundRef.current = new Audio(clickSelect);
 
     if (selectSoundRef.current) {
@@ -55,6 +55,7 @@ function App() {
     setPlay(true);
     setIsLoading(true);
     soundtrackRef.current?.play();
+
     try {
       const response = await axios.get(baseUrl);
       //console.log("response:", response.data.results);
@@ -77,25 +78,20 @@ function App() {
     }
   }
 
-  useEffect((): void => {
-    setBaseUrl(`https://opentdb.com/api.php?amount=10${endpoint.category}${endpoint.difficulty}${endpoint.type}`);
-  }, [endpoint])
-
   const updateScore = (choiceSelected: string, correctAnswer: string): void => {
     setSelectAnswer(choiceSelected)
     setMsg(null);
 
     if (choiceSelected === correctAnswer) {
       setScore(prevScore => prevScore + 10);
-      setIsCorrect(true);
       correctAnsSound.current?.play();
+      setIsCorrect(true);
 
     } else {
-      setIsCorrect(false);
-      wrongAnsSound.current?.play();
-
       if (wrongAnsSound.current) {
         wrongAnsSound.current.volume = 0.50;
+        wrongAnsSound.current?.play();
+        setIsCorrect(false);
       }
     }
   }
@@ -107,39 +103,89 @@ function App() {
     }
   };
 
+  const goToNextQuestion = () => {
+    if (!selectAnswer) {
+      setMsg("Please select an answer");
+    } else {
+      setSelectAnswer(null);
+      setCount(count + 1)
+      setIsCorrect(null);
+      setMsg(null);
+      shuffleChoices();
+      nextSoundEffect.current?.play();
+    }
+  }
+
+  const playAgain = () => {
+    setCount(0);
+    setScore(0);
+    setPlay(false);
+    setEndpoint({
+      limitOfQuestion: 10,
+      category: "",
+      difficulty: "",
+      type: ""
+    })
+
+    if (soundtrackRef.current) {
+      soundtrackRef.current.currentTime = 20;
+      soundtrackRef.current.pause();
+    }
+  }
+
+  useEffect((): void => {
+    setBaseUrl(`https://opentdb.com/api.php?amount=${endpoint.limitOfQuestion}${endpoint.category}${endpoint.difficulty}${endpoint.type}`);
+  }, [endpoint])
+
   useEffect((): void => {
     shuffleChoices();
   }, [count, isLoading]);
 
 
   useEffect(() => {
-    soundtrackRef.current = new Audio(bgMusic);
     correctAnsSound.current = new Audio(correctAnswerSound);
     wrongAnsSound.current = new Audio(wrongAnswerSound);
     nextSoundEffect.current = new Audio(nextSound);
-  }, []);
+  }, [isCorrect]);
 
 
   return (
-    <main className="min-h-screen flex justify-center items-center bg-[url('https://images.pexels.com/photos/7130499/pexels-photo-7130499.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')] bg-cover bg-no-repeat object-center">
-      <div className='mx-5 flex flex-col gap-y-10'>
-        <h1 className="dancing-script-title drop-shadow-xl text-7xl text-center font-medium bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-pink-400">
+    <main className="relative min-h-screen flex justify-center items-center overflow-hidden main-bg">
+      <div className="relative z-10 mx-5 flex flex-col gap-y-10">
+        <h1 className="dancing-script-title py-5 drop-shadow-xl text-7xl text-center font-medium bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-pink-400">
           Quizzit
         </h1>
-        <div className={`flex flex-col p-8 border border-rose-500 rounded-lg transition-all duration-300 md:w-[672px] gap-y-5
-            ${selectAnswer ? (
+        <div className={`flex flex-col p-8 border rounded-lg transition-all duration-100 md:w-[672px] gap-y-5
+              ${selectAnswer ? (
             isCorrect
               ? "bg-gradient-to-bl from-green-400 to-lime-200 border-green-900"
               : " bg-gradient-to-bl to-red-300 from-pink-400 border-red-900"
-          ) : "bg-gradient-to-tr from-pink-200/90  to-white/90"}
-            `}
+          ) : "bg-gradient-to-tr from-pink-200/90  to-white/50"}
+              `}
         >
           {!play && !isLoading ? (
             <>
               <div className="my-2 flex items-center">
-                <p className='w-40'>
-                  <label htmlFor='category' className="bebas-neue-regular text-slate-800 font-medium">Select Category</label>
-                </p>
+                <label htmlFor="limitOfQuestion" className="bebas-neue-regular text-slate-800 font-medium w-40">Limits Questions</label>
+                <select
+                  name="limitOfQuestion"
+                  id="limitOfQuestion"
+                  className="bebas-neue-regular py-2 rounded-md w-2/4 bg-transparent text-slate-700 outline-none"
+                  onChange={handleChange}
+                >
+                  {numberOfQuestions.map((number, index) => (
+                    <option
+                      key={index}
+                      value={number}
+                    >
+                      {number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="my-2 flex items-center">
+                <label htmlFor="category" className="bebas-neue-regular text-slate-800 font-medium w-40">Select Category</label>
                 <select
                   name="category"
                   id="category"
@@ -158,9 +204,7 @@ function App() {
               </div>
 
               <div className="my-2 flex items-center">
-                <p className='w-40'>
-                  <label htmlFor='difficulty' className="bebas-neue-regular text-slate-800 font-medium">Select Difficulty</label>
-                </p>
+                <label htmlFor="difficulty" className="bebas-neue-regular text-slate-800 font-medium w-40">Select Difficulty</label>
                 <select
                   name="difficulty"
                   id="difficulty"
@@ -179,9 +223,7 @@ function App() {
               </div>
 
               <div className="my-2 flex items-center">
-                <p className='w-40'>
-                  <label htmlFor='type' className="bebas-neue-regular text-slate-800 font-medium">Select Type</label>
-                </p>
+                <label htmlFor="type" className="bebas-neue-regular text-slate-800 font-medium w-40">Select Type</label>
                 <select
                   name="type"
                   id="type"
@@ -209,56 +251,55 @@ function App() {
           ) : (
             <>
               {isLoading && (
-                <p className='bebas-neue-regular text-xl text-slate-700'>Generating questions...</p>
+                <p className="bebas-neue-regular text-xl text-slate-700">Generating questions...</p>
               )}
 
               {isError && (
                 <>
-                  <p className='bebas-neue-regular text-xl text-slate-700'>Failed to fetch questionaire</p>
-                  <p className='bebas-neue-regular text-xl text-slate-700'>{isError}</p>
+                  <p className="bebas-neue-regular text-xl text-slate-700">Failed to fetch questionaire</p>
+                  <p className="bebas-neue-regular text-xl text-slate-700">{isError}</p>
                   <button
-                    className="dancing-script-title text-xl text-slate-700 my-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
+                    className="dancing-script-title text-white text-xl my-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
                     onClick={() => {
                       setPlay(false)
                       soundtrackRef.current?.pause();
                     }}
                   >
-                    Go back
+                    Go back and try again
                   </button>
                 </>
               )}
 
               {questions[count] && !isError && (
                 <div>
-                  <div className='mt-2 flex justify-between flex-wrap'>
-                    <p className='bebas-neue-regular text-slate-700'>Category: {questions[count].category.replace(regex, "")}</p>
-                    <p className='bebas-neue-regular text-slate-700'>
-                      <span className="pr-3 bebas-neue-regular text-slate-700">{count + 1}/10</span>
+                  <div className="mt-2 flex justify-between flex-wrap">
+                    <p className="bebas-neue-regular text-slate-700">Category: {questions[count].category.replace(regex, "")}</p>
+                    <p className="bebas-neue-regular text-slate-700">
                       Score: {score}
                     </p>
                   </div>
-                  <p className="my-2 bebas-neue-regular text-slate-700">Question #{count + 1}</p>
-                  <h2 className='bebas-neue-regular text-slate-700'>{questions[count].question.replace(regex, "")}</h2>
+                  <p className="my-2 bebas-neue-regular text-slate-700">Question: {count + 1}/{endpoint.limitOfQuestion}</p>
+                  <h2 className="bebas-neue-regular text-slate-700">{questions[count].question.replace(regex, "")}</h2>
                   <div className="flex flex-col justify-center">
                     {shuffledChoices.map((info) => (
                       <button
                         key={info}
-                        className={`bebas-neue-regular text-slate-700 my-2 px-4 py-1  bg-white border border-black rounded-full opacity-75
-                          ${selectAnswer === info && selectAnswer !== questions[count].correct_answer
-                            ? "opacity-100 text-red-900 bg-red-600/50 border-red-900"
+                        className={`bebas-neue-regular text-slate-700 my-2 px-4 py-1 bg-white border border-black rounded-full opacity-75
+                            ${selectAnswer === info && selectAnswer !== questions[count].correct_answer
+                            ? "opacity-100 text-red-900 bg-red-400/60 border-red-900"
                             : ""
                           }
-                          ${selectAnswer === info && selectAnswer === questions[count].correct_answer
-                            ? "text-green-900 bg-green-600/50 border-green-900"
+                            ${selectAnswer === info && selectAnswer === questions[count].correct_answer
+                            ? "text-green-900 bg-green-600/80 border-green-940"
                             : ""
                           }
-                          ${selectAnswer
+                            ${selectAnswer
                             ? info === questions[count].correct_answer
-                              ? "text-green-500 font-bold bg-green-300 border-green-600"
+                              ? "text-green-500 font-bold bg-green-500/90 border-green-600"
                               : ""
                             : ""
                           }
-                        `}
+                          `}
                         onClick={() => updateScore(info, questions[count].correct_answer)}
                         disabled={selectAnswer ? true : false}
                       >
@@ -268,61 +309,45 @@ function App() {
                     <p className="text-red-500 font-medium text-lg text-center">{msg}</p>
                   </div>
 
-                  <div className="flex flex-row items-center  justify-between">
+                  <div className="flex flex-row items-center justify-between">
                     <button
-                      className="dancing-script-title my-2 ml-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
-                      onClick={() => {
-                        if (!selectAnswer) {
-                          setMsg("Please select an answer");
-                        } else {
-                          setSelectAnswer(null);
-                          setCount(count + 1)
-                          setIsCorrect(null);
-                          setMsg(null);
-                          shuffleChoices();
-                          nextSoundEffect.current?.play();
-                        }
-                      }}
+                      className="dancing-script-title px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
+                      onClick={goToNextQuestion}
                     >
                       Next
                     </button>
-
-                    {selectAnswer ?
-                      isCorrect
-                        ? (<GiCheckMark className=" text-lime-600" size={30} />)
-                        : (<HiMiniXMark className="text-red-600" size={30} />)
-                      : null
-                    }
+                    <div className='relative'>
+                      <GiCheckMark
+                        size={30}
+                        className={`absolute -top-3 right-0 text-lime-600 visible transition duration-200 ${selectAnswer && isCorrect ? "opacity-100" : "opacity-0"}`}
+                      />
+                      <HiMiniXMark
+                        size={30}
+                        className={`absolute -top-3 right-0 text-red-600 visible transition duration-200  ${selectAnswer && !isCorrect ? "opacity-100" : "opacity-0"}`}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {count > 9 && (
+              {count > endpoint.limitOfQuestion - 1 && (
                 <>
-                  <h2 className="dancing-script-title  text-slate-700  text-center text-3xl">Your Score</h2>
-                  <p className="bebas-neue-regular text-slate-700 text-center text-5xl">{score}/100</p>
+                  <h2 className="dancing-script-title text-slate-700 text-center text-3xl">Your Score</h2>
+                  <p className="bebas-neue-regular text-slate-700 text-center text-5xl">{score}/{10 * endpoint.limitOfQuestion}</p>
                   <button
-                    className="dancing-script-title  my-2 ml-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
-                    onClick={() => {
-                      setCount(0);
-                      setScore(0);
-                      setPlay(false);
-                      setEndpoint({ category: "", difficulty: "", type: "" })
-                      soundtrackRef.current?.pause();
-                    }}
+                    className="dancing-script-title my-2 ml-2 px-4 py-2 border bg-gradient-to-bl from-rose-500 to-pink-500 text-white rounded-md duration-200 active:bg-gradient-to-r active:to-pink-500 active:from-rose-300 active:scale-95 transition"
+                    onClick={playAgain}
                   >
                     Play Again
                   </button>
                 </>
               )}
-
             </>
           )}
-
         </div>
       </div>
     </main>
-  )
-}
+  );
+};
 
 export default App

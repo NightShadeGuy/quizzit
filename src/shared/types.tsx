@@ -13,6 +13,7 @@ export type ChoiceType = {
 }
 
 export type Endpoint = {
+    limitOfQuestion: number,
     category: string,
     difficulty: string,
     type: string

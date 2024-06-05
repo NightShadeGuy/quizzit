@@ -1,5 +1,7 @@
 import { Categories, Difficulty, ChoiceType } from "./types"
 
+export const numberOfQuestions: number[] = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
 export const categories: Categories[] = [
     { category: "Any Category", paramValue: "" },
     { category: "General Knowledge", paramValue: "&category=9" },
